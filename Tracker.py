@@ -34,11 +34,6 @@ SEEDS = {
     ]
 }
 
-INDIAN_ACADEMIC_PROTOCOLS = {
-    "honorifics": ["Chief Patron", "Hon'ble Vice-Chancellor", "Organizing Secretary", "Convenor"],
-    "grants": ["ICSSR Sponsored", "DST-SERB", "UGC-SAP", "Indian Knowledge System (IKS)", "Viksit Bharat"]
-}
-
 # =====================================================================
 # 2. INTERFACE BUILDER
 # =====================================================================
@@ -61,53 +56,59 @@ current_date = datetime.date.today()
 st.sidebar.info(f"📅 Today's Date: {current_date.strftime('%B %d, %Y')}")
 
 # =====================================================================
-# 3. LIVE WEB SCRAPER LOGIC (DUCKDUCKGO INTERACTIVE AGENT)
+# 3. DYNAMIC QUERY CONSTRUCTOR (FALLBACK LOGIC)
 # =====================================================================
-# Build targeted academic syntax hooks to filter out spam
 site_hook = "site:.ac.in" if "India" in target_region else ("site:.edu" if "United States" in target_region else "site:.ac.uk")
 
-# Indian universities usually publish "brochures" or "circulars"
+# Strict, highly targeted query (Primary Attempt)
 if "India" in target_region:
-    intent_hook = '("conference" OR "workshop" OR "call for papers" OR "brochure" OR "circular")'
-    # Force search to check for ICSSR, DST or typical administrative headers to ensure institutional legitimacy
-    query = f'{site_hook} "{selected_keyword}" AND {intent_hook} AND ("ICSSR" OR "sponsored" OR "university" OR "seminar")'
+    strict_query = f'{site_hook} "{selected_keyword}" (conference OR workshop OR seminar) (ICSSR OR UGC OR DST)'
 else:
-    intent_hook = '("conference" OR "symposium" OR "workshop" OR "call for papers")'
-    query = f'{site_hook} "{selected_keyword}" AND {intent_hook}'
+    strict_query = f'{site_hook} "{selected_keyword}" (conference OR symposium OR workshop OR "call for papers")'
+
+# Broad query (Secondary Fallback Attempt if strict returns 0 results)
+broad_query = f'{site_hook} "{selected_keyword}" (conference OR workshop OR CFP OR seminar)'
 
 st.subheader(f"📊 Live Search: '{selected_keyword}' events in {target_region}")
-st.markdown("This section bypasses third-party aggregator sites and pulls live event pages directly from real university subdomains.")
+st.markdown("This search queries official university servers directly to find conferences, workshops, and calls for papers.")
 
-# Execute live scrape when requested
+# =====================================================================
+# 4. EXECUTION
+# =====================================================================
 if st.button("🚀 Fetch Live Web Results", use_container_width=True):
-    with st.spinner(f"Querying public university servers for '{selected_keyword}'..."):
+    with st.spinner(f"Querying university servers for '{selected_keyword}'..."):
+        results = []
         try:
-            # Initialize DuckDuckGo live API search client
+            # 1. Attempt strict targeted academic search
             with DDGS() as ddgs:
-                # Restrict search results to return fresh, relevant matches
-                search_results = list(ddgs.text(query, max_results=10))
-                
-            if search_results:
-                st.success(f"Found {len(search_results)} live entries on official university websites!")
-                
-                for idx, result in enumerate(search_results):
-                    # Clean up the output cards
+                results = list(ddgs.text(strict_query, max_results=8))
+            
+            # 2. If nothing is found, auto-fallback to the relaxed/broader query
+            if not results:
+                st.info("🔄 Optimizing query filters to surface broader results...")
+                with DDGS() as ddgs:
+                    results = list(ddgs.text(broad_query, max_results=8))
+                    
+            if results:
+                st.success(f"Found {len(results)} live listings!")
+                for idx, result in enumerate(results):
                     with st.container():
                         st.markdown(f"#### {idx+1}. {result['title']}")
                         st.write(result.get('body', 'No description preview available.'))
                         st.markdown(f"🔗 [Visit Official Institutional Page]({result['href']})")
                         st.divider()
             else:
-                st.warning("⚠️ No active notices found matching this specific keyword combination on the servers today.")
-                st.info("Try switching the **Target Institutional Tier** or selecting a broader semantic keyword in the sidebar.")
+                st.warning("⚠️ No active notices found matching this specific keyword combination.")
+                st.info("Tip: Try searching a related sister keyword in the sidebar or check another Tier region.")
                 
         except Exception as e:
-            st.error("Error executing live connection.")
-            st.write(f"Details: {str(e)}")
-            st.info("If you just added `duckduckgo-search` to requirements.txt, ensure Streamlit Cloud has finished rebuilding the app environment.")
+            st.error("Connection failed. The search API rate-limit might have triggered.")
+            st.write(f"Technical Log: {str(e)}")
 else:
     st.info("💡 Click the button above to execute a real-time crawl of university directories.")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("**Engine Search String:**")
-st.sidebar.code(query, language="sql")
+st.sidebar.markdown("**Active Query:**")
+st.sidebar.code(strict_query, language="sql")
+st.sidebar.markdown("**Fallback Query:**")
+st.sidebar.code(broad_query, language="sql")
