@@ -3,112 +3,171 @@ import urllib.parse
 import datetime
 
 # Page configuration
-st.set_page_config(page_title="Geography Event Tracker", page_icon="🌍", layout="wide")
+st.set_page_config(page_title="Pro Academic Event Tracker", page_icon="🎓", layout="wide")
 
-st.title("🌍 Geography Academic Event Tracker Dashboard")
-st.markdown("### *Zero-Noise Institutional Notice Board Scanner*")
-st.write("This tool targets the exact subdirectories and PDF circular structures where universities publish their active seminars and calls.")
+st.title("🎓 Pro Academic Event & Notice Board Tracker")
+st.markdown("### *Advanced Global Multi-Disciplinary Discovery Engine*")
+st.write("Customize your keywords, add custom universities, and batch-search academic networks globally.")
 st.divider()
 
-# Get today's automatic rolling year to prevent prehistoric results
-current_year = datetime.date.today().year # e.g., 2026
+# Auto-calculate current tracking year (2026)
+current_year = datetime.date.today().year
 
 # =====================================================================
-# 1. PARAMETERS
+# 1. DYNAMIC DISCIPLINARY KEYWORDS (NOW EDITABLE)
 # =====================================================================
-st.sidebar.header("🎯 Focus Keywords")
+st.sidebar.header("🛠️ 1. Edit Discipline Keywords")
+st.sidebar.write("Fine-tune the search terms for your field below:")
 
-# Free text input - keep keywords simple for maximum search results
-custom_focus = st.sidebar.text_input(
-    "1. Define Topic/Discipline:",
-    value="geography OR rural OR spatial",
-    help="Keep terms simple (e.g. 'geography', 'rural development', 'spatial analysis')"
+DEFAULT_DISCIPLINE_MAP = {
+    "🌍 Geography": '"geography" OR "human geography" OR "regional development" OR "spatial justice" OR "urban studies"',
+    "👥 Sociology": '"sociology" OR "social research" OR "social theory" OR "demography" OR "caste" OR "class" OR "gender"',
+    "💼 Management & Policy": '"management" OR "public policy" OR "development studies" OR "governance" OR "organizational studies"',
+    "🏺 Anthropology": '"anthropology" OR "ethnography" OR "cultural studies" OR "fieldwork" OR "indigenous"',
+    "📜 History": '"history" OR "historical geography" OR "archives" OR "historiography" OR "agrarian history"',
+    "🛰️ GIS & Geoinformatics": '"GIS" OR "geoinformatics" OR "spatial analysis" OR "remote sensing" OR "spatial data science" OR "mapping"'
+}
+
+# Allow the researcher to view and live-edit the query parameters
+selected_discipline = st.sidebar.selectbox("Select Discipline to Edit/Use:", list(DEFAULT_DISCIPLINE_MAP.keys()))
+active_keywords = st.sidebar.text_area(
+    "Active Keywords (Edit freely):", 
+    value=DEFAULT_DISCIPLINE_MAP[selected_discipline],
+    height=100
 )
 
-# Clean, unified keywords
-discipline_keywords = f"({custom_focus})"
-
+# Set custom date filters
 st.sidebar.markdown("---")
-st.sidebar.info(f"📅 Showing only results containing year references **{current_year}** or **{current_year + 1}**")
+st.sidebar.header("📅 2. Date Constraints")
+target_year = st.sidebar.number_input("Primary Target Year:", min_value=2020, max_value=2035, value=current_year)
+include_next_year = st.sidebar.checkbox("Include Next Year in search?", value=True)
+
+# Build date filter string
+if include_next_year:
+    date_filter = f'("{target_year}" OR "{target_year + 1}")'
+else:
+    date_filter = f'"{target_year}"'
 
 # =====================================================================
-# 2. UNIVERSITY NETWORKS
+# 2. UNIVERSITY REGISTRY (WITH CUSTOM DOMAIN ADDER)
 # =====================================================================
-REGIONAL_NETWORKS = {
-    "🇮🇳 India Academic Network (.ac.in)": [
-        {"inst": "Jawaharlal Nehru University", "domain": "jnu.ac.in", "dept": "CSRD / School of Social Sciences"},
-        {"inst": "Delhi University", "domain": "du.ac.in", "dept": "Department of Geography"},
-        {"inst": "Banaras Hindu University", "domain": "bhu.ac.in", "dept": "Department of Geography"},
-        {"inst": "Jamia Millia Islamia", "domain": "jmi.ac.in", "dept": "Department of Geography"},
-        {"inst": "Aligarh Muslim University", "domain": "amu.ac.in", "dept": "Department of Geography"},
-        {"inst": "IIT Bombay", "domain": "iitb.ac.in", "dept": "Humanities & Social Sciences (HSS)"},
-        {"inst": "IIT Kharagpur", "domain": "iitkgp.ac.in", "dept": "Humanities & Social Sciences"}
+GLOBAL_REGISTRY = {
+    "🇮🇳 India": [
+        {"inst": "Jawaharlal Nehru University (JNU)", "domain": "jnu.ac.in"},
+        {"inst": "University of Delhi (DU)", "domain": "du.ac.in"},
+        {"inst": "Tata Institute of Social Sciences (TISS)", "domain": "tiss.edu"},
+        {"inst": "Banaras Hindu University (BHU)", "domain": "bhu.ac.in"},
+        {"inst": "Jamia Millia Islamia (JMI)", "domain": "jmi.ac.in"},
+        {"inst": "Aligarh Muslim University (AMU)", "domain": "amu.ac.in"},
+        {"inst": "IIT Bombay", "domain": "iitb.ac.in"},
+        {"inst": "IIT Kharagpur", "domain": "iitkgp.ac.in"}
     ],
-    "🇬🇧 United Kingdom Network (.ac.uk)": [
-        {"inst": "University of Oxford", "domain": "ox.ac.uk", "dept": "School of Geography and the Environment"},
-        {"inst": "University of Cambridge", "domain": "cam.ac.uk", "dept": "Department of Geography"},
-        {"inst": "University College London", "domain": "ucl.ac.uk", "dept": "Department of Geography"},
-        {"inst": "University of Edinburgh", "domain": "ed.ac.uk", "dept": "School of GeoSciences"},
-        {"inst": "University of Liverpool", "domain": "liverpool.ac.uk", "dept": "Department of Geography & Planning"}
+    "🇬🇧 United Kingdom": [
+        {"inst": "University of Oxford", "domain": "ox.ac.uk"},
+        {"inst": "University of Cambridge", "domain": "cam.ac.uk"},
+        {"inst": "London School of Economics (LSE)", "domain": "lse.ac.uk"},
+        {"inst": "University College London (UCL)", "domain": "ucl.ac.uk"},
+        {"inst": "SOAS University of London", "domain": "soas.ac.uk"}
     ],
-    "🇺🇸 United States Network (.edu)": [
-        {"inst": "Clark University", "domain": "clarku.edu", "dept": "Graduate School of Geography"},
-        {"inst": "Penn State University", "domain": "psu.edu", "dept": "Department of Geography"},
-        {"inst": "UC Berkeley", "domain": "berkeley.edu", "dept": "Department of Geography"},
-        {"inst": "University of Washington", "domain": "washington.edu", "dept": "Department of Geography"}
+    "🇺🇸 United States": [
+        {"inst": "Harvard University", "domain": "harvard.edu"},
+        {"inst": "University of California, Berkeley", "domain": "berkeley.edu"},
+        {"inst": "University of Chicago", "domain": "uchicago.edu"},
+        {"inst": "Penn State University", "domain": "psu.edu"},
+        {"inst": "Clark University", "domain": "clarku.edu"}
     ]
 }
 
-selected_network = st.selectbox("📂 Select Regional Network to View:", list(REGIONAL_NETWORKS.keys()))
-active_list = REGIONAL_NETWORKS[selected_network]
+# --- CUSTOM UNIVERSITY ADDER ---
+st.subheader("🔗 Add a Custom University Domain")
+col_name, col_dom, col_btn = st.columns([3, 3, 2])
+
+# Initialize session state for custom universities if not exists
+if "custom_unis" not in st.session_state:
+    st.session_state.custom_unis = []
+
+with col_name:
+    custom_name = st.text_input("University Name:", placeholder="e.g., London School of Geography", key="cust_name")
+with col_dom:
+    custom_domain = st.text_input("Domain (No https/www):", placeholder="e.g., geography.org", key="cust_dom")
+with col_btn:
+    st.write(" ") # alignment spacer
+    st.write(" ") 
+    if st.button("➕ Add to My Search Network", use_container_width=True):
+        if custom_name and custom_domain:
+            # Strip common url prefixes if user accidentally pastes them
+            clean_domain = custom_domain.replace("https://", "").replace("http://", "").replace("www.", "").strip("/")
+            st.session_state.custom_unis.append({"inst": custom_name, "domain": clean_domain})
+            st.success(f"Added {custom_name}!")
+            st.rerun()
+
+# Combine static registry with user-added universities
+combined_registry = GLOBAL_REGISTRY.copy()
+if st.session_state.custom_unis:
+    combined_registry["⭐ Custom Registered Universities"] = st.session_state.custom_unis
 
 # =====================================================================
-# 3. CARD GRID LAYOUT
+# 3. INTERACTIVE SEARCH INTERFACE
 # =====================================================================
-st.subheader(f"Dashboard: {selected_network}")
-st.write("Academic departments rarely publish clean HTML event pages. Use these targeted buttons to scan their raw PDFs or their direct system directories:")
+st.divider()
+st.subheader("🔍 Institutional Scanning Portal")
 
+region = st.selectbox("Select Target Network:", list(combined_registry.keys()))
+active_list = combined_registry[region]
+
+st.write(f"Showing **{len(active_list)}** universities in this network. Adjust your target discipline settings in the left sidebar.")
+
+# Display Grid
 for i in range(0, len(active_list), 2):
     row_unis = active_list[i:i+2]
-    cols = st.columns(2, gap="medium")
+    cols = st.columns(2, gap="large")
     
     for idx, uni in enumerate(row_unis):
         with cols[idx]:
+            # Clean Layout Card
             st.markdown(
                 f"""
-                <div style="border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 5px; background-color: #fcfcfc;">
-                    <h4 style="margin: 0; color: #1f77b4;">🏫 {uni['inst']}</h4>
-                    <p style="margin: 4px 0; font-size: 0.9em; color: #666;"><strong>Domain:</strong> <code>{uni['domain']}</code> | <strong>Unit:</strong> {uni['dept']}</p>
+                <div style="border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 5px; background-color: #f9f9f9;">
+                    <h4 style="margin: 0; color: #2e6f40;">🏫 {uni['inst']}</h4>
+                    <p style="margin: 5px 0; font-size: 0.9em; color: #555;"><strong>Active Search Domain:</strong> <code>{uni['domain']}</code></p>
                 </div>
                 """, 
                 unsafe_allow_html=True
             )
             
-            # --- BUTTON 1: SCAN RAW SEMINAR & CONFERENCE PDFs ---
-            # This directly captures the newly uploaded PDF circular sheets (highly effective for JNU/IITs)
-            pdf_query = f'site:{uni["domain"]} filetype:pdf {discipline_keywords} AND ("seminar" OR "conference" OR "workshop" OR "call for papers") AND ("{current_year}" OR "{current_year + 1}")'
+            # Formulate the Google Dorks using our dynamic variables
+            discipline_query = f"({active_keywords})"
+            
+            # PDF Search Syntax
+            pdf_query = f'site:{uni["domain"]} filetype:pdf {discipline_query} AND ("seminar" OR "conference" OR "workshop" OR "call for papers" OR "colloquium") AND {date_filter}'
             encoded_pdf = urllib.parse.quote_plus(pdf_query)
             
-            # --- BUTTON 2: LIVE DIRECTORY SCANNER ---
-            # This directly scans structural event directories of the university
-            dir_query = f'site:{uni["domain"]}/events OR site:{uni["domain"]}/seminars OR site:{uni["domain"]}/news {discipline_keywords} AND ("{current_year}" OR "{current_year + 1}")'
+            # Directory Search Syntax
+            dir_query = f'site:{uni["domain"]}/events OR site:{uni["domain"]}/seminars OR site:{uni["domain"]}/news {discipline_query} AND {date_filter}'
             encoded_dir = urllib.parse.quote_plus(dir_query)
             
+            # Buttons
             btn_col1, btn_col2 = st.columns(2)
             with btn_col1:
                 st.link_button(
-                    "📄 Scan Call PDFs", 
+                    "📄 Scan PDF Circulars", 
                     f"https://www.google.com/search?q={encoded_pdf}", 
                     use_container_width=True,
                     type="primary"
                 )
             with btn_col2:
                 st.link_button(
-                    "🗂️ Scan Event Directories", 
+                    "🗂️ Scan Web Bulletins", 
                     f"https://www.google.com/search?q={encoded_dir}", 
                     use_container_width=True
                 )
-            st.write("") # Spacer
+            st.write("") # spacing
 
+# =====================================================================
+# 4. SYSTEM STATUS / TROUBLESHOOTING
+# =====================================================================
 st.divider()
-st.caption("Global Geography Discovery Engine • Direct Filetype & Directory Mapping.")
+st.subheader("🛠️ Active Dork Template (Current Selection)")
+st.write("Copy this exact template to manually search a website if needed:")
+sample_dork = f'site:example.edu filetype:pdf ({active_keywords}) AND ("seminar" OR "conference" OR "workshop" OR "call for papers") AND {date_filter}'
+st.code(sample_dork, language="sql")
