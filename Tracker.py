@@ -145,7 +145,7 @@ MOCK_WEB_DATABASE = [
 st.title("🌍 Global Academic Geography Discovery Engine")
 st.markdown("### *Live Multi-Region Activity Ticker & Expiry Routing Platform (2026)*")
 st.write("An advanced database framework tracking verified university call-for-papers, labs, and event notices.")
-st.hr()
+st.divider()  # Successfully replaced st.hr() with a valid Streamlit horizontal divider
 
 # Sidebar: Controls and Operational Query Configurations
 st.sidebar.header("🔍 Discovery Controls")
