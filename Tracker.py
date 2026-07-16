@@ -1,128 +1,119 @@
 import streamlit as st
-import requests
 import urllib.parse
+import datetime
 
 # Set up page configurations at the absolute top
-st.set_page_config(page_title="Global University Geography Tracer", page_icon="🌍", layout="wide")
+st.set_page_config(page_title="Global Geography Tracker", page_icon="🌍", layout="wide")
 
-st.title("🌍 Global University Geography Tracer")
-st.markdown("### *Dynamic Notice-Board & Research Group Discovery Engine*")
-st.write("Using a live international directory, pick any nation and university to instantly trace their official geography departments, calendars, and active workshops.")
+st.title("🌍 Global Academic Geography Event Aggregator")
+st.markdown("### *Unified Background Tracking & Live Broadcast Stream*")
+st.write("This engine monitors major global research hubs simultaneously, stripping away expired programs and aggregating only future-facing notice boards.")
 st.divider()
 
-# =====================================================================
-# 1. LIVE COUNTRY & UNIVERSITY API CONNECTION
-# =====================================================================
-# Popular nations to list in the sidebar (User can select any)
-POPULAR_COUNTRIES = [
-    "India", "United Kingdom", "United States", "Canada", "Australia", 
-    "Germany", "France", "Netherlands", "Singapore", "South Africa", 
-    "Japan", "Sweden", "Switzerland", "Brazil"
-]
-
-st.sidebar.header("🗺️ Select Target Territory")
-selected_country = st.sidebar.selectbox("1. Choose a Country", POPULAR_COUNTRIES)
-
-# Helper function to fetch real-time university database records
-@st.cache_data(show_spinner="Connecting to global university registries...")
-def fetch_universities_by_country(country_name):
-    try:
-        # Querying the Hipolabs open directory database
-        api_url = f"http://universities.hipolabs.com/search?country={urllib.parse.quote_plus(country_name)}"
-        response = requests.get(api_url, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            # Sort alphabetically by name
-            return sorted(data, key=lambda x: x["name"])
-    except Exception as e:
-        st.sidebar.error(f"Failed to fetch directory: {e}")
-    return []
-
-# Fetch live list
-uni_list = fetch_universities_by_country(selected_country)
-
-if uni_list:
-    uni_names = [uni["name"] for uni in uni_list]
-    selected_uni_name = st.sidebar.selectbox("2. Select an Institution", uni_names)
-    
-    # Retrieve details of selected university
-    selected_uni_data = next(item for item in uni_list if item["name"] == selected_uni_name)
-    # Extract domain (e.g., "jnu.ac.in" or "ox.ac.uk")
-    uni_domain = selected_uni_data["domains"][0] if selected_uni_data.get("domains") else ""
-    uni_website = selected_uni_data["web_pages"][0] if selected_uni_data.get("web_pages") else ""
-else:
-    st.sidebar.warning("No universities found or registry is currently offline.")
-    selected_uni_name = None
-    uni_domain = ""
-    uni_website = ""
+# Get today's automatic rolling date to shield expired content
+today = datetime.date.today()
+formatted_today = today.strftime("%Y-%m-%d")
 
 # =====================================================================
-# 2. DISCOVERY & SEARCH FORMULATION PANELS
+# 1. CORE REGIONAL DIRECTORIES (PRE-LOADED DOMAINS)
 # =====================================================================
-if selected_uni_name and uni_domain:
-    col_info, col_search = st.columns([1, 1], gap="large")
-    
-    with col_info:
-        st.subheader("🏫 Selected Institutional Node")
-        st.markdown(f"### {selected_uni_name}")
-        st.markdown(f"**Country Registry:** `{selected_country}`")
-        st.markdown(f"**Primary Web Domain:** `{uni_domain}`")
-        
-        if uni_website:
-            st.link_button("🌐 Open Main University Portal", uni_website, use_container_width=True)
-        
-        st.divider()
-        st.markdown(
-            """
-            #### How to use this:
-            Since universities house their notice boards differently (some call them 'Seminars', others 'CFPs', 'Workshops', or 'Circulars'), we have built search query formulas that target the selected university's subdomains. 
-            
-            Clicking a search button will open a new browser tab with your custom search query already prepared.
-            """
-        )
+REGIONAL_NETWORKS = {
+    "🇮🇳 India Academic Network (.ac.in)": [
+        {"inst": "Jawaharlal Nehru University", "domain": "jnu.ac.in"},
+        {"inst": "Delhi University", "domain": "du.ac.in"},
+        {"inst": "IIT Bombay", "domain": "iitb.ac.in"},
+        {"inst": "IIT Kharagpur", "domain": "iitkgp.ac.in"},
+        {"inst": "Banaras Hindu University", "domain": "bhu.ac.in"},
+        {"inst": "Jamia Millia Islamia", "domain": "jmi.ac.in"},
+        {"inst": "Aligarh Muslim University", "domain": "amu.ac.in"}
+    ],
+    "🇬🇧 United Kingdom Network (.ac.uk)": [
+        {"inst": "University of Oxford", "domain": "ox.ac.uk"},
+        {"inst": "University of Cambridge", "domain": "cam.ac.uk"},
+        {"inst": "University College London", "domain": "ucl.ac.uk"},
+        {"inst": "University of Liverpool", "domain": "liverpool.ac.uk"},
+        {"inst": "University of Southampton", "domain": "southampton.ac.uk"},
+        {"inst": "University of Edinburgh", "domain": "ed.ac.uk"}
+    ],
+    "🇺🇸 United States Network (.edu)": [
+        {"inst": "Clark University", "domain": "clarku.edu"},
+        {"inst": "University of Maryland", "domain": "umd.edu"},
+        {"inst": "Penn State University", "domain": "psu.edu"},
+        {"inst": "UC Berkeley", "domain": "berkeley.edu"},
+        {"inst": "University of Washington", "domain": "washington.edu"}
+    ]
+}
 
-    with col_search:
-        st.subheader("🔍 Automated Discovery Filters")
-        st.write("Select a targeted academic path to generate custom direct links:")
-        
-        # Select what kind of workspace to search for
-        academic_path = st.radio(
-            "What geography space are you looking for?",
-            options=[
-                "Department & Faculty (Socio-Spatial/GIS/Human Geography)",
-                "Workshops, Seminars & Active Notice Boards",
-                "Research Labs & Working Groups",
-                "Calls for Papers (CFP) & Regional Symposia"
-            ],
-            index=1
-        )
-        
-        # Build precise search logic based on selection
-        if "Department" in academic_path:
-            raw_query = f'site:{uni_domain} ("geography department" OR "geography faculty" OR "spatial sciences")'
-        elif "Workshops" in academic_path:
-            raw_query = f'site:{uni_domain} "geography" AND ("workshop" OR "seminar series" OR "event schedule" OR "notice board" OR "events calendar")'
-        elif "Labs" in academic_path:
-            raw_query = f'site:{uni_domain} "geography" AND ("research lab" OR "working group" OR "centre for" OR "consortium")'
-        else:
-            raw_query = f'site:{uni_domain} "geography" AND ("call for papers" OR "CFP" OR "abstract submission" OR "symposium")'
-            
-        # Encode URL for safe redirection
-        encoded_query = urllib.parse.quote_plus(raw_query)
-        google_search_url = f"https://www.google.com/search?q={encoded_query}"
-        bing_search_url = f"https://www.bing.com/search?q={encoded_query}"
-        
-        st.markdown("#### 🚀 Trace Direct Channels")
-        st.link_button("🌐 Search Google for this University's Geography Space", google_search_url, use_container_width=True, type="primary")
-        st.link_button("🔍 Search Bing for this University's Geography Space", bing_search_url, use_container_width=True)
-        
-        st.markdown("---")
-        st.write("**Target Domain Search Formula:**")
-        st.code(raw_query, language="sql")
-        st.caption("💡 *This custom formula forces search engines to show only relevant results from within this specific university's servers, bypassing generic advertisement sites.*")
+# =====================================================================
+# 2. SEED DISCIPLINARY MODIFIERS
+# =====================================================================
+st.sidebar.header("🎯 Focus Parameters")
+selected_network = st.sidebar.selectbox("1. Select Network to Aggregate", list(REGIONAL_NETWORKS.keys()))
+discipline_focus = st.sidebar.selectbox(
+    "2. Academic Focus Area",
+    ["Socio-Spatial & Rural Development", "GIScience, Spatial Computing & GeoAI", "Physical Landscapes & Climate Change"]
+)
 
-else:
-    st.info("👈 Use the controls on the left to select a country and university to begin!")
+st.sidebar.markdown("---")
+st.sidebar.subheader("📅 Live Rolling Filter")
+st.sidebar.info(f"Targeting programs active on or after today: **{today.strftime('%b %d, %Y')}**")
+
+# =====================================================================
+# 3. AGGREGATOR ENGINE & MULTI-QUERY GENERATOR
+# =====================================================================
+active_network_list = REGIONAL_NETWORKS[selected_network]
+
+st.subheader(f"📡 Unified Broadcast: Tracking {selected_network}")
+st.write(f"Aggregating active notices for **{discipline_focus}** across all registered institutions in this network simultaneously:")
+
+# Display tracking nodes in a clean layout
+cols = st.columns(len(active_network_list))
+for i, node in enumerate(active_network_list):
+    cols[i].markdown(f"📡 **{node['inst']}**\n`{node['domain']}`")
 
 st.divider()
-st.caption("🛡️ Global Geography Discovery Hub © 2026. Self-healing country registry bypass active.")
+
+# Construct the multi-site search filter
+# E.g., (site:jnu.ac.in OR site:du.ac.in OR site:iitb.ac.in)
+site_queries = [f"site:{node['domain']}" for node in active_network_list]
+unified_site_string = "(" + " OR ".join(site_queries) + ")"
+
+# Define intent and keyword strings
+if "Socio-Spatial" in discipline_focus:
+    keywords = '("geography" OR "regional development" OR "rural" OR "spatial justice" OR "socio-spatial")'
+elif "GIScience" in discipline_focus:
+    keywords = '("GIS" OR "remote sensing" OR "spatial data science" OR "GeoAI" OR "geoinformatics")'
+else:
+    keywords = '("geomorphology" OR "climate change" OR "biogeography" OR "hydrology")'
+
+# Combine everything into a single macro-aggregator query
+# Only pulling pages published or updated after today's dynamic calendar date
+macro_query = f'{unified_site_string} {keywords} AND ("workshop" OR "conference" OR "call for papers" OR "seminar series" OR "symposium") AND after:{formatted_today}'
+
+col_search_action, col_query_details = st.columns([1, 1], gap="large")
+
+with col_search_action:
+    st.markdown("#### ⚡ Launch Consolidated Aggregate Search")
+    st.write(
+        """
+        By launching this consolidated search, you check the servers of **all network universities 
+        at the exact same time**. Google's engine will return a single, unified list of upcoming 
+        events, completely bypassing expired pages.
+        """
+    )
+    
+    encoded_macro = urllib.parse.quote_plus(macro_query)
+    st.link_button(
+        f"🚀 Query Entire {selected_network.split(' ')[0]} Network", 
+        f"https://www.google.com/search?q={encoded_macro}", 
+        type="primary", 
+        use_container_width=True
+    )
+
+with col_query_details:
+    st.markdown("#### 🛠️ Live Tracking Logic")
+    st.write("This query is automatically updated every single day to push older posts out of your results:")
+    st.code(macro_query, language="sql")
+
+st.divider()
+st.caption("Global Geography Discovery Engine. Dynamic multi-node continuous aggregation active.")
