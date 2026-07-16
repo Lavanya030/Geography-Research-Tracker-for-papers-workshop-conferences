@@ -80,7 +80,7 @@ st.set_page_config(page_title="Global Geography Discovery Engine", page_icon="�
 st.title("🌍 Global Academic Geography Discovery Engine")
 st.markdown("### *Live Multi-Region Activity Ticker & Expiry Routing Platform (2026)*")
 st.write("An automated tool for researchers to scan clean, non-bogus university call-for-papers, labs, and conferences.")
-st.hr()
+st.divider()
 
 # Sidebar: Controls and Operational Query Configurations
 st.sidebar.header("🔍 Discovery Controls")
