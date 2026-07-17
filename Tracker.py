@@ -8,7 +8,7 @@ import os
 # =====================================================================
 st.set_page_config(page_title="Geography Engine", layout="wide")
 
-# CSS Styling - FIXED: Forced dark text for readability
+# CSS Styling - Fixed dark text color for readability
 st.markdown("""
     <style>
     .univ-card { 
@@ -118,12 +118,15 @@ filtered_df = df[df['state'] == selected_state] if not df.empty else pd.DataFram
 st.subheader(f"🏛️ Territorial Registry: {selected_state}")
 
 for _, row in filtered_df.iterrows():
-    univ = row['Name of the University']
+    # Robust extraction to fix TypeError
+    raw_val = row['Name of the University']
+    univ_str = str(raw_val) if pd.notna(raw_val) else "University Name Missing"
+    
     with st.container():
-        st.markdown(f'<div class="univ-card"><strong>{univ}</strong></div>', unsafe_html=True)
+        st.markdown(f'<div class="univ-card"><strong>{univ_str}</strong></div>', unsafe_html=True)
         c1, c2 = st.columns(2)
-        with c1: st.link_button("🔎 Strict", get_dork_url(univ, chosen_resource, "strict"))
-        with c2: st.link_button("🔓 Broad", get_dork_url(univ, chosen_resource, "broad"))
+        with c1: st.link_button("🔎 Strict", get_dork_url(univ_str, chosen_resource, "strict"))
+        with c2: st.link_button("🔓 Broad", get_dork_url(univ_str, chosen_resource, "broad"))
 
 # Global Funder Sweep
 st.markdown("---")
@@ -131,7 +134,7 @@ st.subheader("🌐 Global Funder Sweep (Cross-Country Matrix Scan)")
 st.markdown(f"**Current Structural Filter Selection:** `{chosen_resource}`")
 
 col_sweep1, col_sweep2 = st.columns(2)
-# FIXED: Strictly Indian Domains Only
+# Strictly Indian Domains
 cbp_domains = '(site:ac.in OR site:res.in OR site:org.in OR site:gov.in)'
 
 with col_sweep1:
