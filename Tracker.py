@@ -40,7 +40,7 @@ st.markdown("""
         color: #B91C1C; font-weight: 500; font-size: 14px; margin-top: 8px;
     }
     </style>
-""", unsafe_transform=True)
+""", unsafe_allow_html=True)
 
 # =====================================================================
 # TEMPORAL ANCHOR ENGINE (AUTOMATED CURRENT DATE TRACKING)
@@ -187,7 +187,7 @@ if not processed_df.empty:
                     { '✅ Verified Funding Compliance: Holds explicit legal 12(B) validation clearances for Central/ICSSR grant streams.' if '12(b)' in row['Status'].lower() else '⚠️ Regulatory Constraint Alert: Lacks active 12(B) registry markers. Focus checks on localized corporate allocations.' }
                 </div>
             </div>
-        """, unsafe_transform=True)
+        """, unsafe_allow_html=True)
         
         # Trigger Action Buttons aligned to the bounding layout card boxes
         zip_modifier = f"AND \"{row['Zip']}\"" if row['Zip'] else ""
