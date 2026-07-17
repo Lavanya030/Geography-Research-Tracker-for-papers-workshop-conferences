@@ -48,7 +48,6 @@ def load_base_registry():
         try:
             data = pd.read_csv(file_name)
             data.columns = [c.strip() for c in data.columns]
-            # Force conversion of key columns to string immediately
             data['Name of the University'] = data['Name of the University'].astype(str)
             data['state'] = data['state'].astype(str)
             return data, True
@@ -57,7 +56,6 @@ def load_base_registry():
     return pd.DataFrame(columns=['Name of the University', 'state', 'Address']), False
 
 def get_dork_url(institution_name, resource_type, mode="strict"):
-    # Ensure string format for URL building
     inst_name = str(institution_name)
     base = f'"{inst_name}"'
     patterns = {
@@ -102,7 +100,7 @@ chosen_resource = st.sidebar.selectbox("Document Type", [
 # =====================================================================
 # 5. RENDERING ENGINE
 # =====================================================================
-st.title("✊🏽 Geography Engine")
+st.title("Geography Engine")
 
 # Elite Section
 st.subheader("🔥 Core Research Intensities (National Elite Nodes)")
@@ -120,13 +118,11 @@ filtered_df = df[df['state'] == selected_state] if not df.empty else pd.DataFram
 st.subheader(f"🏛️ Territorial Registry: {selected_state}")
 
 for _, row in filtered_df.iterrows():
-    # Sanitize inputs explicitly
     raw_val = row['Name of the University']
     univ_str = str(raw_val).strip() if pd.notna(raw_val) else "University Name Missing"
     
     with st.container():
-        # Using a safer, explicit string conversion inside the f-string
-        st.markdown(f'<div class="univ-card"><strong>{str(univ_str)}</strong></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="univ-card"><strong>{str(univ_str)}</strong></div>', unsafe_html=True)
         c1, c2 = st.columns(2)
         with c1: st.link_button("🔎 Strict", get_dork_url(univ_str, chosen_resource, "strict"))
         with c2: st.link_button("🔓 Broad", get_dork_url(univ_str, chosen_resource, "broad"))
@@ -137,7 +133,6 @@ st.subheader("🌐 Global Funder Sweep (Cross-Country Matrix Scan)")
 st.markdown(f"**Current Structural Filter Selection:** `{chosen_resource}`")
 
 col_sweep1, col_sweep2 = st.columns(2)
-# Strictly Indian Domains
 cbp_domains = '(site:ac.in OR site:res.in OR site:org.in OR site:gov.in)'
 
 with col_sweep1:
