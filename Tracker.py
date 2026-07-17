@@ -4,31 +4,28 @@ import datetime
 import os
 import html
 
-# =====================================================================
-# 1. CORE ENGINE & UI CONFIG
-# =====================================================================
+# --- CONFIG ---
 st.set_page_config(page_title="Geography Engine", layout="wide")
 
-# CSS Styling - Cleaned to avoid formatting errors
-st.markdown("""
-<style>
-.univ-card { 
-    background-color: #FAFAFA; 
-    padding: 15px; 
-    border-radius: 8px; 
-    border-left: 5px solid #7F1D1D; 
-    margin-bottom: 10px; 
-    border: 1px solid #E2E8F0; 
-    color: #0F172A !important; 
-}
-h1 { color: #7F1D1D; font-weight: 800; }
-h3 { color: #1E293B; font-weight: 700; }
-</style>
-""", unsafe_html=True)
+# --- CSS (Minimal & Clean to avoid formatting errors) ---
+st.markdown(
+    """
+    <style>
+    .univ-card { 
+        background-color: #FAFAFA; 
+        padding: 15px; 
+        border-radius: 8px; 
+        border-left: 5px solid #7F1D1D; 
+        margin-bottom: 10px; 
+        border: 1px solid #E2E8F0; 
+        color: #0F172A !important; 
+    }
+    </style>
+    """, 
+    unsafe_html=True
+)
 
-# =====================================================================
-# 2. DYNAMIC TEMPORAL ENGINE
-# =====================================================================
+# --- ENGINE LOGIC ---
 current_date = datetime.date.today()
 CURRENT_YEAR = current_date.year
 NEXT_YEAR = CURRENT_YEAR + 1
@@ -40,9 +37,8 @@ remaining_months = ALL_MONTHS[current_month_idx:]
 month_queries = " OR ".join([f'"{m} {CURRENT_YEAR}"' for m in remaining_months])
 STRICT_TEMPORAL = f'("upcoming" OR "{NEXT_YEAR}" OR {month_queries})'
 
-# =====================================================================
-# 3. MASTER DATA PROCESSING
-# =====================================================================
+# --- CACHED DATA LOAD ---
+@st.cache_data(ttl=60)
 def load_base_registry():
     file_name = "Welcome to UGC, New Delhi, India.csv"
     if os.path.exists(file_name):
@@ -51,6 +47,7 @@ def load_base_registry():
             data.columns = [c.strip() for c in data.columns]
             data['Name of the University'] = data['Name of the University'].astype(str)
             data['state'] = data['state'].astype(str)
+            data = data.drop_duplicates(subset=['Name of the University'])
             return data, True
         except:
             return pd.DataFrame(), False
@@ -65,55 +62,51 @@ def get_dork_url(institution_name, resource_type, mode="strict"):
         "Brochures & Notification PDFs": "(filetype:pdf OR brochure OR circular OR \"notice board\")"
     }
     pattern = patterns.get(resource_type, "")
-    
     if mode == "strict":
         query = f"{base} AND {pattern} AND {STRICT_TEMPORAL}"
     else:
         query = f"{base} AND {pattern}"
     return f"https://www.google.com/search?q={query.replace(' ', '+')}"
 
-# =====================================================================
-# 4. CONFIG & SIDEBAR
-# =====================================================================
-TOP_50_NODES = [
-    {"name": "Jawaharlal Nehru University (CSRD)", "path": "https://www.jnu.ac.in"},
-    {"name": "Delhi School of Economics", "path": "https://www.du.ac.in"},
-    {"name": "Aligarh Muslim University", "path": "https://www.amu.ac.in"},
-    {"name": "Centre for the Study of Developing Societies (CSDS)", "path": "https://www.csds.in"},
-    {"name": "Indian Institute for Human Settlements (IIHS)", "path": "https://iihs.co.in"},
-    {"name": "Tata Institute of Social Sciences", "path": "https://tiss.edu"},
-    {"name": "IIT Delhi (HSS Department)", "path": "https://hss.iitd.ac.in"},
-    {"name": "IIT Bombay (HSS)", "path": "https://www.iitb.ac.in"},
-]
-
+# --- SIDEBAR ---
 df, success = load_base_registry()
 st.sidebar.markdown("### 🗺️ Territorial Scope")
 state_list = sorted(df['state'].unique().tolist()) if not df.empty else ["No Data"]
 selected_state = st.sidebar.selectbox("Select State", state_list)
 
-st.sidebar.markdown("### 📂 Structural Document Pattern")
+st.sidebar.markdown("### 📂 Document Pattern")
 chosen_resource = st.sidebar.selectbox("Document Type", [
     "Conferences, Seminars & Symposia", 
     "Methodology Workshops & Training", 
     "Brochures & Notification PDFs"
 ])
 
-# =====================================================================
-# 5. RENDERING ENGINE
-# =====================================================================
+if st.sidebar.button("🧹 Clear Cache & Refresh"):
+    st.cache_data.clear()
+    st.rerun()
+
+# --- MAIN PAGE ---
 st.title("Geography Engine")
 
 # Elite Section
-st.subheader("🔥 Core Research Intensities (National Elite Nodes)")
+TOP_50_NODES = [
+    {"name": "Jawaharlal Nehru University (CSRD)", "path": "https://www.jnu.ac.in"},
+    {"name": "Delhi School of Economics", "path": "https://www.du.ac.in"},
+    {"name": "Aligarh Muslim University", "path": "https://www.amu.ac.in"},
+    {"name": "Centre for the Study of Developing Societies (CSDS)", "path": "https://www.csds.in"},
+    {"name": "Tata Institute of Social Sciences", "path": "https://tiss.edu"},
+]
+
+st.subheader("🔥 Core Research Intensities")
 for item in TOP_50_NODES:
     with st.container():
-        st.markdown(f"**🏫 {item['name']}**")
+        st.markdown(f"**{item['name']}**")
         c1, c2, c3 = st.columns(3)
         with c1: st.link_button("🌐 Portal", item['path'])
         with c2: st.link_button("🔎 Strict", get_dork_url(item['name'], chosen_resource, "strict"))
         with c3: st.link_button("🔓 Broad", get_dork_url(item['name'], chosen_resource, "broad"))
 
-# Reactive State Registry
+# Registry
 st.markdown("---")
 filtered_df = df[df['state'] == selected_state] if not df.empty else pd.DataFrame()
 st.subheader(f"🏛️ Territorial Registry: {selected_state}")
@@ -129,20 +122,18 @@ for _, row in filtered_df.iterrows():
         with c1: st.link_button("🔎 Strict", get_dork_url(univ_str, chosen_resource, "strict"))
         with c2: st.link_button("🔓 Broad", get_dork_url(univ_str, chosen_resource, "broad"))
 
-# Global Funder Sweep
+# Funder Sweep
 st.markdown("---")
-st.subheader("🌐 Global Funder Sweep (Cross-Country Matrix Scan)")
-st.markdown(f"**Current Structural Filter Selection:** `{chosen_resource}`")
-
+st.subheader("🌐 Global Funder Sweep")
 col_sweep1, col_sweep2 = st.columns(2)
 cbp_domains = '(site:ac.in OR site:res.in OR site:org.in OR site:gov.in)'
 
 with col_sweep1:
     cbp_dork = f'{cbp_domains} "Capacity Building" AND "ICSSR" AND {STRICT_TEMPORAL}'
-    st.info("🎯 **Capacity Building Programmes (CBP)**")
-    st.link_button("🚀 Launch Country-Wide CBP Sweep", f"https://www.google.com/search?q={cbp_dork.replace(' ', '+')}", use_container_width=True)
+    st.info("🎯 **Capacity Building Programmes**")
+    st.link_button("🚀 Launch Sweep", f"https://www.google.com/search?q={cbp_dork.replace(' ', '+')}", use_container_width=True)
 
 with col_sweep2:
     rmw_dork = f'{cbp_domains} "Research Methodology" AND ("Workshop" OR "FDP") AND "ICSSR" AND {STRICT_TEMPORAL}'
-    st.info("📊 **Research Methodology Workshops (RMW)**")
-    st.link_button("🚀 Launch Country-Wide RMW Sweep", f"https://www.google.com/search?q={rmw_dork.replace(' ', '+')}", use_container_width=True)
+    st.info("📊 **Methodology Workshops**")
+    st.link_button("🚀 Launch Sweep", f"https://www.google.com/search?q={rmw_dork.replace(' ', '+')}", use_container_width=True)
