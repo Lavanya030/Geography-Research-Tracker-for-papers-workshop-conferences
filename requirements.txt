@@ -3,3 +3,5 @@ duckduckgo-search
 requests
 beautifulsoup4
 google-generativeai
+streamlit>=1.30.0
+pandas>=2.0.0
