@@ -8,7 +8,7 @@ import os
 # =====================================================================
 st.set_page_config(page_title="Geography Engine", layout="wide")
 
-# CSS Styling - Fixed dark text color for readability
+# CSS Styling
 st.markdown("""
     <style>
     .univ-card { 
@@ -48,16 +48,18 @@ def load_base_registry():
         try:
             data = pd.read_csv(file_name)
             data.columns = [c.strip() for c in data.columns]
-            data['Name of the University'] = data['Name of the University'].astype(str).str.strip()
-            data['state'] = data['state'].astype(str).str.strip()
-            data['Address'] = data['Address'].fillna('').astype(str).str.strip()
+            # Force conversion of key columns to string immediately
+            data['Name of the University'] = data['Name of the University'].astype(str)
+            data['state'] = data['state'].astype(str)
             return data, True
         except:
             return pd.DataFrame(), False
     return pd.DataFrame(columns=['Name of the University', 'state', 'Address']), False
 
 def get_dork_url(institution_name, resource_type, mode="strict"):
-    base = f'"{institution_name}"'
+    # Ensure string format for URL building
+    inst_name = str(institution_name)
+    base = f'"{inst_name}"'
     patterns = {
         "Conferences, Seminars & Symposia": "(conference OR seminar OR symposium OR \"call for papers\")",
         "Methodology Workshops & Training": "(\"methodology workshop\" OR \"capacity building\" OR FDP OR \"research methodology\")",
@@ -118,12 +120,13 @@ filtered_df = df[df['state'] == selected_state] if not df.empty else pd.DataFram
 st.subheader(f"🏛️ Territorial Registry: {selected_state}")
 
 for _, row in filtered_df.iterrows():
-    # Robust extraction to fix TypeError
+    # Sanitize inputs explicitly
     raw_val = row['Name of the University']
-    univ_str = str(raw_val) if pd.notna(raw_val) else "University Name Missing"
+    univ_str = str(raw_val).strip() if pd.notna(raw_val) else "University Name Missing"
     
     with st.container():
-        st.markdown(f'<div class="univ-card"><strong>{univ_str}</strong></div>', unsafe_html=True)
+        # Using a safer, explicit string conversion inside the f-string
+        st.markdown(f'<div class="univ-card"><strong>{str(univ_str)}</strong></div>', unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1: st.link_button("🔎 Strict", get_dork_url(univ_str, chosen_resource, "strict"))
         with c2: st.link_button("🔓 Broad", get_dork_url(univ_str, chosen_resource, "broad"))
