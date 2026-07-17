@@ -2,28 +2,28 @@ import streamlit as st
 import pandas as pd
 import datetime
 import os
-import html # Added to sanitize university names
+import html
 
 # =====================================================================
 # 1. CORE ENGINE & UI CONFIG
 # =====================================================================
 st.set_page_config(page_title="Geography Engine", layout="wide")
 
-# CSS Styling
+# CSS Styling - Cleaned to avoid formatting errors
 st.markdown("""
-    <style>
-    .univ-card { 
-        background-color: #FAFAFA; 
-        padding: 15px; 
-        border-radius: 8px; 
-        border-left: 5px solid #7F1D1D; 
-        margin-bottom: 10px; 
-        border: 1px solid #E2E8F0; 
-        color: #0F172A !important; 
-    }
-    h1 { color: #7F1D1D; font-weight: 800; }
-    h3 { color: #1E293B; font-weight: 700; }
-    </style>
+<style>
+.univ-card { 
+    background-color: #FAFAFA; 
+    padding: 15px; 
+    border-radius: 8px; 
+    border-left: 5px solid #7F1D1D; 
+    margin-bottom: 10px; 
+    border: 1px solid #E2E8F0; 
+    color: #0F172A !important; 
+}
+h1 { color: #7F1D1D; font-weight: 800; }
+h3 { color: #1E293B; font-weight: 700; }
+</style>
 """, unsafe_html=True)
 
 # =====================================================================
@@ -120,12 +120,10 @@ st.subheader(f"🏛️ Territorial Registry: {selected_state}")
 
 for _, row in filtered_df.iterrows():
     raw_val = row['Name of the University']
-    # Sanitize and escape the string to prevent HTML injection crashes
     univ_str = str(raw_val).strip() if pd.notna(raw_val) else "University Name Missing"
     safe_univ_str = html.escape(univ_str) 
     
     with st.container():
-        # Using the sanitized string
         st.markdown(f'<div class="univ-card"><strong>{safe_univ_str}</strong></div>', unsafe_html=True)
         c1, c2 = st.columns(2)
         with c1: st.link_button("🔎 Strict", get_dork_url(univ_str, chosen_resource, "strict"))
