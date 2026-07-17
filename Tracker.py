@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import datetime
 import os
+import html # Added to sanitize university names
 
 # =====================================================================
 # 1. CORE ENGINE & UI CONFIG
@@ -23,7 +24,7 @@ st.markdown("""
     h1 { color: #7F1D1D; font-weight: 800; }
     h3 { color: #1E293B; font-weight: 700; }
     </style>
-""", unsafe_allow_html=True)
+""", unsafe_html=True)
 
 # =====================================================================
 # 2. DYNAMIC TEMPORAL ENGINE
@@ -119,10 +120,13 @@ st.subheader(f"🏛️ Territorial Registry: {selected_state}")
 
 for _, row in filtered_df.iterrows():
     raw_val = row['Name of the University']
+    # Sanitize and escape the string to prevent HTML injection crashes
     univ_str = str(raw_val).strip() if pd.notna(raw_val) else "University Name Missing"
+    safe_univ_str = html.escape(univ_str) 
     
     with st.container():
-        st.markdown(f'<div class="univ-card"><strong>{str(univ_str)}</strong></div>', unsafe_html=True)
+        # Using the sanitized string
+        st.markdown(f'<div class="univ-card"><strong>{safe_univ_str}</strong></div>', unsafe_html=True)
         c1, c2 = st.columns(2)
         with c1: st.link_button("🔎 Strict", get_dork_url(univ_str, chosen_resource, "strict"))
         with c2: st.link_button("🔓 Broad", get_dork_url(univ_str, chosen_resource, "broad"))
