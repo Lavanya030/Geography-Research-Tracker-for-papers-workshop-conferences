@@ -7,23 +7,9 @@ import html
 # --- CONFIG ---
 st.set_page_config(page_title="Geography Engine", layout="wide")
 
-# --- CSS (Minimal & Clean to avoid formatting errors) ---
-st.markdown(
-    """
-    <style>
-    .univ-card { 
-        background-color: #FAFAFA; 
-        padding: 15px; 
-        border-radius: 8px; 
-        border-left: 5px solid #7F1D1D; 
-        margin-bottom: 10px; 
-        border: 1px solid #E2E8F0; 
-        color: #0F172A !important; 
-    }
-    </style>
-    """, 
-    unsafe_html=True
-)
+# --- CSS (Defined as a single string to prevent indentation errors) ---
+css_style = "<style>.univ-card { background-color: #FAFAFA; padding: 15px; border-radius: 8px; border-left: 5px solid #7F1D1D; margin-bottom: 10px; border: 1px solid #E2E8F0; color: #0F172A !important; }</style>"
+st.markdown(css_style, unsafe_html=True)
 
 # --- ENGINE LOGIC ---
 current_date = datetime.date.today()
