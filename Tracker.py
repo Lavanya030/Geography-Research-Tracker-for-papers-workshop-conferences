@@ -184,7 +184,7 @@ if not processed_df.empty:
                     </div>
                 </div>
                 <div class="{ 'compliance-check' if '12(b)' in row['Status'].lower() else 'compliance-warn' }">
-                    { '✅ Verified Funding Compliance: Holds explicit legal 12(B) validation clearances for Central/ICSSR grant streams.' if '12(b)' in row['Status'].lower() else '⚠️ Regulatory Constraint Alert: Lacks active 12(B) registry markers. Focus checks on localized corporate allocations.' }
+                    { '✅ Verified Funding Funding Compliance: Holds explicit legal 12(B) validation clearances for Central/ICSSR grant streams.' if '12(b)' in row['Status'].lower() else '⚠️ Regulatory Constraint Alert: Lacks active 12(B) registry markers. Focus checks on localized corporate allocations.' }
                 </div>
             </div>
         """, unsafe_allow_html=True)
@@ -197,6 +197,7 @@ if not processed_df.empty:
         col_space, col_btn = st.columns([5, 1])
         with col_btn:
             st.link_button("🎯 Target Active CFPs", ind_url, use_container_width=True)
-        st.markdown("<br>", unsafe_transform=True)
+        # FIXED: Changed unsafe_transform to unsafe_allow_html below
+        st.markdown("<br>", unsafe_allow_html=True)
 else:
     st.warning("No institutions located matching the chosen structural constraints.")
